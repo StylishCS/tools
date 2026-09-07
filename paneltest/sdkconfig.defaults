@@ -1,0 +1,11 @@
+CONFIG_IDF_TARGET="esp32"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+
+# The panel under test. Display options come from mv_display's own Kconfig,
+# which this tool shares with the firmware -- so a fault report and the real
+# build can never disagree about how the panel was driven.
+CONFIG_MV_PANEL_ILI9341=y
+CONFIG_MV_LCD_SWAP_XY=y
+CONFIG_MV_LCD_MIRROR_X=y
+CONFIG_MV_LCD_BGR=y
+CONFIG_MV_LCD_PCLK_MHZ=40

@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/CMakeFiles/bootloader
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/CMakeFiles/bootloader.rule
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/CMakeFiles/bootloader-complete.rule
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+/home/yusuf/Work/freelance/Motivue/tools/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
