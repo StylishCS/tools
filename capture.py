@@ -186,23 +186,54 @@ def no_port_message():
     return "\n".join(lines)
 
 
-def start_key_forwarder(ser):
-    """Send keystrokes to the board without echoing them into the log.
+# Windows delivers arrow keys as a two-byte code, not as an ANSI escape
+# sequence, so they are translated here into the same bytes a Unix terminal
+# sends. The firmware then sees one protocol regardless of the laptop.
+_WIN_ARROWS = {
+    b"H": b"\x1b[A",   # up
+    b"P": b"\x1b[B",   # down
+    b"K": b"\x1b[D",   # left
+    b"M": b"\x1b[C",   # right
+}
 
-    cbreak rather than raw: it turns off line buffering and echo but leaves
-    signal handling alone, so Ctrl-C still stops the capture instead of being
-    forwarded to the ESP32 as a character.
-    """
-    if not sys.stdin.isatty():
-        return None
-    try:
-        import termios
-        import tty
-    except ImportError:
-        return None            # Windows: capture still works, keys do not
+
+def _forward_windows(ser):
+    import msvcrt
+    import time as _time
+
+    def pump():
+        while True:
+            if not msvcrt.kbhit():
+                _time.sleep(0.02)
+                continue
+            ch = msvcrt.getch()
+            # 0x00 and 0xE0 both mean "an extended key follows".
+            if ch in (b"\x00", b"\xe0"):
+                mapped = _WIN_ARROWS.get(msvcrt.getch())
+                if mapped:
+                    try:
+                        ser.write(mapped)
+                    except Exception:
+                        return
+                continue
+            try:
+                ser.write(ch)
+            except Exception:
+                return
+
+    threading.Thread(target=pump, daemon=True).start()
+    return ("windows", None)
+
+
+def _forward_unix(ser):
+    import termios
+    import tty
 
     fd = sys.stdin.fileno()
     saved = termios.tcgetattr(fd)
+    # cbreak rather than raw: it turns off line buffering and echo but leaves
+    # signal handling alone, so Ctrl-C still stops the capture instead of
+    # being forwarded to the ESP32 as a character.
     tty.setcbreak(fd)
 
     def pump():
@@ -219,13 +250,40 @@ def start_key_forwarder(ser):
                 return
 
     threading.Thread(target=pump, daemon=True).start()
-    return (fd, saved)
+    return ("unix", (fd, saved))
+
+
+def start_key_forwarder(ser):
+    """Send keystrokes to the board without echoing them into the log.
+
+    Returns a handle to undo any terminal changes, or None with a printed
+    reason. Failing silently here is what makes "the arrows do nothing" so
+    hard to diagnose, so every path that gives up says why.
+    """
+    if os.name == "nt":
+        try:
+            return _forward_windows(ser)
+        except Exception as exc:
+            print(f"keys    disabled: {exc}")
+            return None
+
+    if not sys.stdin.isatty():
+        print("keys    disabled: input is not a terminal "
+              "(do not pipe or redirect this command)")
+        return None
+    try:
+        return _forward_unix(ser)
+    except Exception as exc:
+        print(f"keys    disabled: {exc}")
+        return None
 
 
 def stop_key_forwarder(restore):
-    import termios
-    fd, saved = restore
-    termios.tcsetattr(fd, termios.TCSADRAIN, saved)
+    kind, state = restore
+    if kind == "unix":
+        import termios
+        fd, saved = state
+        termios.tcsetattr(fd, termios.TCSADRAIN, saved)
 
 
 def main():
@@ -289,7 +347,7 @@ def main():
     print(f"log     {full_path}")
     print(f"probe   {probe_path}")
     if restore:
-        print("keys    a/h left  d/l right  o/Enter select  b/q back")
+        print("keys    arrows move  Enter select  Backspace back")
     print("Ctrl-C to stop.\n")
 
     in_probe = False
